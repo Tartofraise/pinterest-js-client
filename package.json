@@ -1,0 +1,36 @@
+{
+  "name": "autopin",
+  "version": "1.0.0",
+  "description": "Pinterest automation library with TypeScript and Playwright - undetected features included",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "example": "ts-node src/example.ts",
+    "quick-start": "ts-node src/quick-start.ts",
+    "test": "ts-node src/quick-start.ts",
+    "postinstall": "npx playwright install chromium"
+  },
+  "keywords": [
+    "pinterest",
+    "automation",
+    "playwright",
+    "typescript",
+    "undetected",
+    "fingerprint"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "fingerprint-injector": "^2.1.75",
+    "fingerprint-generator": "^2.1.75"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  }
+}
+
