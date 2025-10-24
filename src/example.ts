@@ -5,6 +5,7 @@
 
 import { PinterestClient } from './PinterestClient';
 import { PinData, BoardData, SearchOptions } from './types';
+import { LogLevel } from './utils/logger';
 
 async function main() {
   // Create a new Pinterest client with options
@@ -17,6 +18,7 @@ async function main() {
       width: 1920,
       height: 1080,
     },
+    logLevel: LogLevel.INFO,
     // Uncomment to use a proxy
     // proxy: {
     //   server: 'http://proxy.example.com:8080',
@@ -28,20 +30,24 @@ async function main() {
   try {
     // Initialize the client
     console.log('\n=== Initializing Pinterest Client ===');
-    await pinterest.init();
-
-    // Login to Pinterest
-    /*
-    console.log('\n=== Logging in ===');
-    const email = process.env.PINTEREST_EMAIL || 'email@example.com';
-    const password = process.env.PINTEREST_PASSWORD || 'password';
-    const loginSuccess = await pinterest.login(email, password);
-
-    if (!loginSuccess) {
-      console.error('Login failed! Please check credentials.');
-      return;
+    const isAlreadyLoggedIn = await pinterest.init();
+    console.log(`✓ Client initialized - Already logged in: ${isAlreadyLoggedIn}`);
+    
+    // Only login if not already logged in
+    if (!isAlreadyLoggedIn) {
+      console.log('\n=== Logging in ===');
+      const email = process.env.PINTEREST_EMAIL || 'email@example.com';
+      const password = process.env.PINTEREST_PASSWORD || 'password';
+      const loginSuccess = await pinterest.login(email, password);
+      if (!loginSuccess) {
+        console.error('Login failed! Please check credentials.');
+        return;
+      }
+      console.log('✓ Successfully logged in!');
     }
-    */
+    else {
+      console.log('✓ Using existing session (cookies are valid)');
+    }
 
     // Wait a bit after login
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -73,7 +79,7 @@ async function main() {
     // ============================================================
     
     // Create a new pin
-    
+    /*
     console.log('\n=== Creating a New Pin ===');
     const newPin: PinData = {
       imageFile: 'C:/Users/tartofraise/Downloads/replicate-prediction-1xkftcma7drme0ct1fhb1f148r.jpeg',  // Path to local image file
@@ -84,7 +90,7 @@ async function main() {
       altText: 'scrabble',
     };
     await pinterest.createPin(newPin);
-    
+    */
 
 
     const pinUrlToRepin = 'https://fr.pinterest.com/pin/577023771049520662/';
@@ -109,11 +115,12 @@ async function main() {
     */
 
     // Get pins from a board
-    /*console.log('\n=== Getting Pins from a Board ===');
+    /*
+    console.log('\n=== Getting Pins from a Board ===');
     const boardUrl = 'https://fr.pinterest.com/elmo8480/video/';
     const pins = await pinterest.getBoardPins(boardUrl, 20);
-    console.log('Pins:', pins);*/
-    
+    console.log('Pins:', pins);    
+    */
 
     // Delete a pin TODO
     /*console.log('\n=== Deleting a Pin ===');
@@ -126,8 +133,8 @@ async function main() {
 
     // Follow a user
     
-    /*console.log('\n=== Following a User ===');
-    await pinterest.followUser('pinterest');*/
+    console.log('\n=== Following a User ===');
+    await pinterest.followUser('pinterest');
     
 
     // Unfollow a user

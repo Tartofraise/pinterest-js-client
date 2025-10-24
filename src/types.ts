@@ -2,6 +2,8 @@
  * Types and interfaces for Pinterest automation
  */
 
+import { LogLevel } from './utils/logger';
+
 export interface PinterestOptions {
   email?: string;
   password?: string;
@@ -13,6 +15,7 @@ export interface PinterestOptions {
   timeout?: number;
   slowMo?: number;
   useFingerprintSuite?: boolean;
+  logLevel?: LogLevel;
 }
 
 export interface ProxySettings {
