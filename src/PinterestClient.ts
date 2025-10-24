@@ -216,6 +216,21 @@ export class PinterestClient {
   }
 
   /**
+   * Get current cookies from the browser session
+   * Useful for saving session state externally
+   */
+  async getCookies(): Promise<any[]> {
+    return this.coreManager.getCookies();
+  }
+
+  /**
+   * Save current cookies (triggers onCookiesUpdate callback if provided)
+   */
+  async saveCookies(): Promise<void> {
+    return this.coreManager.saveCookies();
+  }
+
+  /**
    * Close browser and cleanup
    */
   async close(): Promise<void> {

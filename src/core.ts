@@ -23,11 +23,12 @@ export class CoreManager {
       useFingerprintSuite: true,
       viewport: { width: 1920, height: 1080 },
       logLevel: LogLevel.INFO,
+      disableFileCookies: false,
       ...options,
     };
     this.logger = new Logger('CoreManager', this.options.logLevel);
     this.stealth = new StealthManager();
-    this.cookiesPath = path.join(process.cwd(), 'cookies.json');
+    this.cookiesPath = this.options.cookiesPath || path.join(process.cwd(), 'cookies.json');
   }
 
   /**
@@ -225,34 +226,53 @@ export class CoreManager {
   }
 
   /**
-   * Save cookies to file
+   * Save cookies to file or external storage
    */
   async saveCookies(): Promise<void> {
     if (!this.context) return;
     
     try {
       const cookies = await this.context.cookies();
-      fs.writeFileSync(this.cookiesPath, JSON.stringify(cookies, null, 2));
-      this.logger.info(`Cookies saved (${cookies.length} cookies)`);
+      
+      // Call external callback if provided
+      if (this.options.onCookiesUpdate) {
+        await this.options.onCookiesUpdate(cookies);
+        this.logger.info(`Cookies sent to external callback (${cookies.length} cookies)`);
+      }
+      
+      // Save to file unless disabled
+      if (!this.options.disableFileCookies) {
+        fs.writeFileSync(this.cookiesPath, JSON.stringify(cookies, null, 2));
+        this.logger.info(`Cookies saved to file (${cookies.length} cookies)`);
+      }
     } catch (error) {
       this.logger.error('Error saving cookies:', error);
     }
   }
 
   /**
-   * Load cookies from file
+   * Load cookies from external source or file
    */
   private async loadCookies(): Promise<void> {
     if (!this.context) return;
     
     try {
-      if (fs.existsSync(this.cookiesPath)) {
+      // Priority 1: Load from provided cookies in options
+      if (this.options.cookies && this.options.cookies.length > 0) {
+        await this.context.addCookies(this.options.cookies);
+        this.logger.info(`Cookies loaded from options (${this.options.cookies.length} cookies)`);
+        return;
+      }
+      
+      // Priority 2: Load from file (unless disabled)
+      if (!this.options.disableFileCookies && fs.existsSync(this.cookiesPath)) {
         const cookies = JSON.parse(fs.readFileSync(this.cookiesPath, 'utf-8'));
         await this.context.addCookies(cookies);
         this.logger.info(`Cookies loaded from file (${cookies.length} cookies)`);
-      } else {
-        this.logger.debug('No cookies file found, starting fresh');
+        return;
       }
+      
+      this.logger.debug('No cookies found, starting fresh session');
     } catch (error) {
       this.logger.error('Error loading cookies:', error);
     }
@@ -301,5 +321,24 @@ export class CoreManager {
    */
   getLogger(): Logger {
     return this.logger;
+  }
+
+  /**
+   * Get current cookies from browser context
+   */
+  async getCookies(): Promise<any[]> {
+    if (!this.context) {
+      this.logger.warn('Cannot get cookies: context not initialized');
+      return [];
+    }
+    
+    try {
+      const cookies = await this.context.cookies();
+      this.logger.debug(`Retrieved ${cookies.length} cookies`);
+      return cookies;
+    } catch (error) {
+      this.logger.error('Error getting cookies:', error);
+      return [];
+    }
   }
 }
