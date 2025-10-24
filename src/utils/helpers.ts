@@ -219,4 +219,87 @@ export class RateLimiter {
   }
 }
 
+/**
+ * Download an image from a URL to a temporary file
+ * Returns the path to the downloaded file
+ */
+export async function downloadImage(url: string): Promise<string> {
+  const https = await import('https');
+  const http = await import('http');
+  const fs = await import('fs');
+  const path = await import('path');
+  const os = await import('os');
+
+  return new Promise((resolve, reject) => {
+    // Determine file extension from URL or default to .jpg
+    const urlPath = new URL(url).pathname;
+    const ext = path.extname(urlPath) || '.jpg';
+    
+    // Create temporary file path
+    const tempDir = os.tmpdir();
+    const fileName = `pinterest_${Date.now()}_${randomInt(1000, 9999)}${ext}`;
+    const filePath = path.join(tempDir, fileName);
+
+    // Choose http or https based on URL
+    const client = url.startsWith('https') ? https : http;
+
+    const file = fs.createWriteStream(filePath);
+    
+    const request = client.get(url, (response) => {
+      // Handle redirects
+      if (response.statusCode === 301 || response.statusCode === 302) {
+        const redirectUrl = response.headers.location;
+        if (redirectUrl) {
+          file.close();
+          fs.unlinkSync(filePath);
+          downloadImage(redirectUrl).then(resolve).catch(reject);
+          return;
+        }
+      }
+
+      if (response.statusCode !== 200) {
+        file.close();
+        fs.unlinkSync(filePath);
+        reject(new Error(`Failed to download image: HTTP ${response.statusCode}`));
+        return;
+      }
+
+      response.pipe(file);
+
+      file.on('finish', () => {
+        file.close();
+        resolve(filePath);
+      });
+    });
+
+    request.on('error', (err) => {
+      file.close();
+      fs.unlink(filePath, () => {}); // Delete the file if it was created
+      reject(err);
+    });
+
+    file.on('error', (err) => {
+      file.close();
+      fs.unlink(filePath, () => {});
+      reject(err);
+    });
+  });
+}
+
+/**
+ * Delete a file from the filesystem
+ */
+export async function deleteFile(filePath: string): Promise<void> {
+  const fs = await import('fs');
+  return new Promise((resolve, reject) => {
+    fs.unlink(filePath, (err) => {
+      if (err && err.code !== 'ENOENT') {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
 

@@ -2,6 +2,7 @@ import { Page } from 'playwright';
 import { PinData } from './types';
 import { Logger, LogLevel } from './utils/logger';
 import { StealthManager } from './utils/stealth';
+import { downloadImage, deleteFile } from './utils/helpers';
 
 export class PinsManager {
   private page: Page;
@@ -21,16 +22,35 @@ export class PinsManager {
     this.logger.info('Creating pin...');
     this.logger.debug('Pin data:', { title: pinData.title, boardName: pinData.boardName });
 
+    let tempImagePath: string | null = null;
+
     try {
       this.logger.debug('Navigating to pin builder...');
       await this.page.goto('https://www.pinterest.com/pin-builder/', { waitUntil: 'domcontentloaded' });
       await this.stealth.randomDelay(1000, 2000);
 
-      if (pinData.imageFile) {
+      // Handle image upload - either from URL or file
+      let imagePathToUpload: string | undefined;
+
+      if (pinData.imageUrl) {
+        this.logger.info('Downloading image from URL:', pinData.imageUrl);
+        try {
+          tempImagePath = await downloadImage(pinData.imageUrl);
+          imagePathToUpload = tempImagePath;
+          this.logger.debug('Image downloaded to:', tempImagePath);
+        } catch (error) {
+          this.logger.error('Failed to download image from URL:', error);
+          throw new Error(`Failed to download image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      } else if (pinData.imageFile) {
+        imagePathToUpload = pinData.imageFile;
+      }
+
+      if (imagePathToUpload) {
         this.logger.debug('Uploading image...');
         const fileInput = 'input[type="file"][data-test-id^="media-upload-input"]';
         await this.page.waitForSelector(fileInput, { timeout: 10000 });
-        await this.page.setInputFiles(fileInput, pinData.imageFile);
+        await this.page.setInputFiles(fileInput, imagePathToUpload);
         await this.stealth.randomDelay(2000, 3000);
       }
 
@@ -85,9 +105,25 @@ export class PinsManager {
         await this.stealth.randomDelay(2000, 3000);
       }
 
+      // Clean up temporary file if it was created
+      if (tempImagePath) {
+        this.logger.debug('Cleaning up temporary image file...');
+        await deleteFile(tempImagePath).catch(err => 
+          this.logger.warn('Failed to delete temporary file:', err)
+        );
+      }
+
       this.logger.success('Pin created successfully');
       return true;
     } catch (error) {
+      // Clean up temporary file on error
+      if (tempImagePath) {
+        this.logger.debug('Cleaning up temporary image file after error...');
+        await deleteFile(tempImagePath).catch(err => 
+          this.logger.warn('Failed to delete temporary file:', err)
+        );
+      }
+      
       this.logger.error('Error creating pin:', error);
       return false;
     }
