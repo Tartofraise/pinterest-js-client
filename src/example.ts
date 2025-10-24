@@ -3,6 +3,10 @@
  * This file demonstrates all the features available in the library
  */
 
+// Load environment variables from .env file
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import { PinterestClient } from './PinterestClient';
 import { PinData, BoardData, SearchOptions } from './types';
 import { LogLevel } from './utils/logger';
@@ -79,9 +83,27 @@ async function main() {
     // PIN OPERATIONS
     // ============================================================
     
-    // Create a new pin
+    // Create a new pin from URL (NEW FEATURE TEST)
+    console.log('\n=== Creating a Pin from URL ===');
+    const newPinFromUrl: PinData = {
+      imageUrl: 'https://replicate.delivery/xezq/MTQkAOUdxUIbA1N4eIQZepPf9aHbTFni1X3GKA8xDpvxa0ErA/tmpecgfnlp_.jpeg',
+      title: 'Test Image from URL',
+      description: 'Testing the new URL download feature - image automatically downloaded and uploaded to Pinterest',
+      link: 'https://mistergift.fr',
+      boardName: 'Idées cadeaux',
+      altText: 'Test image uploaded via URL',
+    };
+    const pinUrl = await pinterest.createPin(newPinFromUrl);
+    if (pinUrl) {
+      console.log('✓ Pin created successfully from URL!');
+      console.log('📌 Pin URL:', pinUrl);
+    } else {
+      console.log('✗ Failed to create pin or retrieve URL');
+    }
+
+    // Create a new pin from local file
     /*
-    console.log('\n=== Creating a New Pin ===');
+    console.log('\n=== Creating a New Pin from Local File ===');
     const newPin: PinData = {
       imageFile: 'C:/Users/tartofraise/Downloads/replicate-prediction-1xkftcma7drme0ct1fhb1f148r.jpeg',  // Path to local image file
       title: 'Scrabble',
@@ -133,9 +155,10 @@ async function main() {
     // ============================================================
 
     // Follow a user
-    
+    /*
     console.log('\n=== Following a User ===');
     await pinterest.followUser('pinterest');
+    */
     
 
     // Unfollow a user
@@ -144,9 +167,11 @@ async function main() {
     */
 
     // Get user profile
+    /*
     console.log('\n=== Getting User Profile ===');
     const profile = await pinterest.getUserProfile('pinterest');
     console.log('Profile:', profile);
+    */
 
     // Follow a board
     

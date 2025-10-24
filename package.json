@@ -45,14 +45,14 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "playwright": "^1.40.0",
+    "fingerprint-generator": "^2.1.75",
     "fingerprint-injector": "^2.1.75",
-    "fingerprint-generator": "^2.1.75"
+    "playwright": "^1.40.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.2"
+    "dotenv": "^17.2.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }
-

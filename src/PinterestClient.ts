@@ -83,8 +83,9 @@ export class PinterestClient {
 
   /**
    * Create a new pin
+   * Returns the URL of the created pin, or null if failed
    */
-  async createPin(pinData: PinData): Promise<boolean> {
+  async createPin(pinData: PinData): Promise<string | null> {
     if (!this.pinsManager) throw new Error('Client not initialized');
     if (!this.isLoggedIn) throw new Error('Not logged in');
     return this.pinsManager.createPin(pinData);

@@ -17,8 +17,9 @@ export class PinsManager {
 
   /**
    * Create a new pin
+   * Returns the URL of the created pin
    */
-  async createPin(pinData: PinData): Promise<boolean> {
+  async createPin(pinData: PinData): Promise<string | null> {
     this.logger.info('Creating pin...');
     this.logger.debug('Pin data:', { title: pinData.title, boardName: pinData.boardName });
 
@@ -105,16 +106,36 @@ export class PinsManager {
         await this.stealth.randomDelay(2000, 3000);
       }
 
-      // Clean up temporary file if it was created
-      if (tempImagePath) {
-        this.logger.debug('Cleaning up temporary image file...');
-        await deleteFile(tempImagePath).catch(err => 
-          this.logger.warn('Failed to delete temporary file:', err)
-        );
+      // Wait for redirect to pin page and extract URL
+      this.logger.debug('Waiting for redirect to pin page...');
+      try {
+        await this.page.waitForURL(/.*\/pin\/\d+.*/, { timeout: 15000 });
+        await this.stealth.randomDelay(2000, 3000); // Extra wait to ensure page loads
+        const pinUrl = this.page.url();
+        this.logger.success('Pin created successfully:', pinUrl);
+        
+        // Clean up temporary file if it was created
+        if (tempImagePath) {
+          this.logger.debug('Cleaning up temporary image file...');
+          await deleteFile(tempImagePath).catch(err => 
+            this.logger.warn('Failed to delete temporary file:', err)
+          );
+        }
+        
+        return pinUrl;
+      } catch (error) {
+        this.logger.warn('Could not detect redirect to pin page, pin may still have been created');
+        
+        // Clean up temporary file if it was created
+        if (tempImagePath) {
+          this.logger.debug('Cleaning up temporary image file...');
+          await deleteFile(tempImagePath).catch(err => 
+            this.logger.warn('Failed to delete temporary file:', err)
+          );
+        }
+        
+        return null;
       }
-
-      this.logger.success('Pin created successfully');
-      return true;
     } catch (error) {
       // Clean up temporary file on error
       if (tempImagePath) {
@@ -125,7 +146,7 @@ export class PinsManager {
       }
       
       this.logger.error('Error creating pin:', error);
-      return false;
+      return null;
     }
   }
 
