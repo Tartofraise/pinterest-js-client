@@ -106,25 +106,50 @@ export class PinsManager {
         await this.stealth.randomDelay(2000, 3000);
       }
 
-      // Wait for redirect to pin page and extract URL
-      this.logger.debug('Waiting for redirect to pin page...');
+      // Wait for success popup and extract pin URL
+      this.logger.debug('Waiting for success popup...');
       try {
-        await this.page.waitForURL(/.*\/pin\/\d+.*/, { timeout: 15000 });
-        await this.stealth.randomDelay(2000, 3000); // Extra wait to ensure page loads
-        const pinUrl = this.page.url();
-        this.logger.success('Pin created successfully:', pinUrl);
+        // Wait for the success popup with "Voir votre Épingle" (See your Pin) button
+        const pinLinkSelector = 'a[data-test-id="seeItNow"], a[href*="/pin/"]';
+        await this.page.waitForSelector(pinLinkSelector, { timeout: 15000 });
+        await this.stealth.randomDelay(1000, 2000);
         
-        // Clean up temporary file if it was created
-        if (tempImagePath) {
-          this.logger.debug('Cleaning up temporary image file...');
-          await deleteFile(tempImagePath).catch(err => 
-            this.logger.warn('Failed to delete temporary file:', err)
-          );
+        // Extract the pin URL from the link
+        const pinHref = await this.page.getAttribute(pinLinkSelector, 'href');
+        if (pinHref) {
+          // Convert relative URL to absolute URL
+          const baseUrl = 'https://www.pinterest.com';
+          const pinUrl = pinHref.startsWith('http') ? pinHref : `${baseUrl}${pinHref}`;
+          this.logger.success('Pin created successfully:', pinUrl);
+          
+          // Clean up temporary file if it was created
+          if (tempImagePath) {
+            this.logger.debug('Cleaning up temporary image file...');
+            await deleteFile(tempImagePath).catch(err => 
+              this.logger.warn('Failed to delete temporary file:', err)
+            );
+          }
+          
+          // Optional: Close the popup by pressing Escape or clicking outside
+          await this.page.keyboard.press('Escape').catch(() => {});
+          await this.stealth.randomDelay(500, 1000);
+          
+          return pinUrl;
+        } else {
+          this.logger.warn('Could not extract pin URL from popup');
+          
+          // Clean up temporary file if it was created
+          if (tempImagePath) {
+            this.logger.debug('Cleaning up temporary image file...');
+            await deleteFile(tempImagePath).catch(err => 
+              this.logger.warn('Failed to delete temporary file:', err)
+            );
+          }
+          
+          return null;
         }
-        
-        return pinUrl;
       } catch (error) {
-        this.logger.warn('Could not detect redirect to pin page, pin may still have been created');
+        this.logger.warn('Could not find success popup, pin may still have been created');
         
         // Clean up temporary file if it was created
         if (tempImagePath) {
