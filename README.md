@@ -1,6 +1,6 @@
 # AutoPin - Pinterest Automation Library
 
-A powerful TypeScript library for Pinterest automation using Playwright with built-in **undetected features** and **fingerprint-suite** integration. This is a complete rewrite of py3-pinterest with enhanced stealth capabilities.
+An **unofficial** JavaScript client for Pinterest automation. A powerful TypeScript library for Pinterest automation using Playwright with built-in **undetected features** and **fingerprint-suite** integration. This is a complete rewrite of py3-pinterest with enhanced stealth capabilities.
 
 ## ✨ Features
 

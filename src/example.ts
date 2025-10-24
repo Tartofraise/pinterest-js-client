@@ -32,7 +32,8 @@ async function main() {
     console.log('\n=== Initializing Pinterest Client ===');
     const isAlreadyLoggedIn = await pinterest.init();
     console.log(`✓ Client initialized - Already logged in: ${isAlreadyLoggedIn}`);
-    
+    await new Promise(resolve => setTimeout(resolve, 1000000));
+
     // Only login if not already logged in
     if (!isAlreadyLoggedIn) {
       console.log('\n=== Logging in ===');

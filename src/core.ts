@@ -41,17 +41,75 @@ export class CoreManager {
       headless: this.options.headless,
       slowMo: this.options.slowMo,
       args: [
+        // CRITICAL: Disable automation signals
         '--disable-blink-features=AutomationControlled',
+        
+        // Performance & Stability
         '--disable-dev-shm-usage',
-        '--disable-web-security',
-        '--disable-features=IsolateOrigins,site-per-process',
-        '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-infobars',
+        '--no-first-run',
+        '--no-default-browser-check',
+        
+        // Window settings
+        '--window-size=1920,1080',
         '--window-position=0,0',
-        '--ignore-certifcate-errors',
-        '--ignore-certifcate-errors-spki-list',
-        '--disable-gpu',
+        
+        // Security (but don't break CORS)
+        '--ignore-certificate-errors',
+        '--ignore-certificate-errors-spki-list',
+        
+        // CRITICAL: Don't disable web security - breaks CORS
+        // '--disable-web-security' would fix CORS but is a huge bot signal
+        
+        // GPU settings (CRITICAL: Force hardware acceleration to avoid SwiftShader)
+        '--use-gl=desktop',
+        '--enable-webgl',
+        '--enable-webgl2',
+        '--use-angle=default',
+        '--enable-gpu-rasterization',
+        '--enable-zero-copy',
+        '--ignore-gpu-blocklist',
+        '--enable-accelerated-2d-canvas',
+        '--enable-accelerated-video-decode',
+        '--disable-software-rasterizer',
+        '--disable-gpu-driver-bug-workarounds',
+        
+        // Disable features that can leak automation (but keep CORS working)
+        '--disable-features=ImprovedCookieControls,LazyFrameLoading,GlobalMediaControls,DestroyProfileOnBrowserClose,AutoExpandDetailsElement,CertificateTransparencyComponentUpdater,AvoidUnnecessaryBeforeUnloadCheckSync,Translate',
+        
+        // Language & locale
+        '--lang=en-US',
+        
+        // Disable automation-related extensions
+        '--disable-component-extensions-with-background-pages',
+        
+        // Additional stealth flags
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-background-networking',
+        '--disable-breakpad',
+        '--disable-client-side-phishing-detection',
+        '--disable-default-apps',
+        '--disable-hang-monitor',
+        '--disable-popup-blocking',
+        '--disable-prompt-on-repost',
+        '--disable-sync',
+        '--metrics-recording-only',
+        '--no-pings',
+        '--password-store=basic',
+        '--use-mock-keychain',
+        '--force-color-profile=srgb',
+        
+        // Exclude automation switches
+        '--enable-automation=false',
+        
+        // Prevent DNS leaks
+        '--enable-features=NetworkService,NetworkServiceInProcess',
+        
+        // WebRTC IP leak protection
+        '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
+        '--enforce-webrtc-ip-permission-check',
       ],
     };
 
