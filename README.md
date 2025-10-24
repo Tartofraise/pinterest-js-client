@@ -1,5 +1,11 @@
 # pinterest-js-client - Pinterest Automation Library
 
+[![npm version](https://img.shields.io/npm/v/pinterest-js-client.svg)](https://www.npmjs.com/package/pinterest-js-client)
+[![npm downloads](https://img.shields.io/npm/dm/pinterest-js-client.svg)](https://www.npmjs.com/package/pinterest-js-client)
+[![license](https://img.shields.io/npm/l/pinterest-js-client.svg)](https://github.com/Tartofraise/pinterest-js-client/blob/master/LICENSE)
+[![Node.js Version](https://img.shields.io/node/v/pinterest-js-client.svg)](https://nodejs.org)
+[![GitHub stars](https://img.shields.io/github/stars/Tartofraise/pinterest-js-client.svg?style=social)](https://github.com/Tartofraise/pinterest-js-client)
+
 An **unofficial** JavaScript client for Pinterest automation. A powerful TypeScript library for Pinterest automation using Playwright with built-in **undetected features** and **fingerprint-suite** integration. This is a complete rewrite of py3-pinterest with enhanced stealth capabilities.
 
 ## ✨ Features
