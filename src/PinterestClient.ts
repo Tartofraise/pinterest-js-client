@@ -217,6 +217,16 @@ export class PinterestClient {
   }
 
   /**
+   * Verify authentication by re-checking the authentication status
+   * Useful to call before performing operations to ensure session is still valid
+   */
+  async verifyAuthentication(): Promise<boolean> {
+    const isValid = await this.coreManager.verifyAuthentication();
+    this.isLoggedIn = isValid;
+    return isValid;
+  }
+
+  /**
    * Get current cookies from the browser session
    * Useful for saving session state externally
    */

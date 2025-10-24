@@ -30,6 +30,21 @@ export class PinsManager {
       await this.page.goto('https://www.pinterest.com/pin-builder/', { waitUntil: 'domcontentloaded' });
       await this.stealth.randomDelay(1000, 2000);
 
+      // Check if we were redirected to login page (authentication failed)
+      const currentUrl = this.page.url();
+      if (currentUrl.includes('/login')) {
+        this.logger.error('Redirected to login page - authentication has expired or is invalid');
+        throw new Error('Authentication failed: User was redirected to login page. Please re-login or check your cookies.');
+      }
+
+      // Verify we're on the pin builder page
+      if (!currentUrl.includes('/pin-builder') && !currentUrl.includes('/pin-creation-tool')) {
+        this.logger.warn(`Unexpected URL after navigation: ${currentUrl}`);
+        throw new Error(`Failed to navigate to pin builder. Current URL: ${currentUrl}`);
+      }
+
+      this.logger.debug('Successfully navigated to pin builder');
+
       // Handle image upload - either from URL or file
       let imagePathToUpload: string | undefined;
 
@@ -50,7 +65,22 @@ export class PinsManager {
       if (imagePathToUpload) {
         this.logger.debug('Uploading image...');
         const fileInput = 'input[type="file"][data-test-id^="media-upload-input"]';
-        await this.page.waitForSelector(fileInput, { timeout: 10000 });
+        
+        try {
+          await this.page.waitForSelector(fileInput, { timeout: 10000 });
+        } catch (error) {
+          // Double-check if we got redirected to login
+          const urlAfterWait = this.page.url();
+          if (urlAfterWait.includes('/login')) {
+            this.logger.error('User was redirected to login while waiting for file input');
+            throw new Error('Authentication failed during pin creation. Your session may have expired. Please re-login.');
+          }
+          
+          this.logger.error('File input selector not found on page');
+          this.logger.debug('Current page URL:', urlAfterWait);
+          throw new Error(`Could not find file upload input on pin builder page. This usually indicates authentication issues or Pinterest UI changes. Current URL: ${urlAfterWait}`);
+        }
+        
         await this.page.setInputFiles(fileInput, imagePathToUpload);
         await this.stealth.randomDelay(2000, 3000);
       }

@@ -161,6 +161,7 @@ export class CoreManager {
 
   /**
    * Check if user is authenticated by visiting Pinterest homepage
+   * and verifying the presence of authenticated user elements
    */
   private async checkAuthentication(): Promise<void> {
     if (!this.page) return;
@@ -173,19 +174,46 @@ export class CoreManager {
       const currentUrl = this.page.url();
       this.logger.debug('Current URL after navigation:', currentUrl);
       
-      // Check if we're on the homepage (logged in) or redirected to login
-      if (currentUrl.includes('/today') || 
-          currentUrl === 'https://www.pinterest.com/' ||
-          currentUrl === 'https://www.pinterest.com') {
-        this.logger.info('User appears to be logged in (cookies valid)');
-        this.isLoggedIn = true;
-      } else if (currentUrl.includes('/login')) {
+      // First check: URL should not be login page
+      if (currentUrl.includes('/login')) {
         this.logger.info('User not logged in (redirected to login page)');
         this.isLoggedIn = false;
-      } else {
-        this.logger.debug('Current URL:', currentUrl);
-        // If we're not redirected to login and not on home, assume logged in
-        this.isLoggedIn = !currentUrl.includes('/login');
+        return;
+      }
+      
+      // Second check: Look for authenticated user indicators
+      // Check for user profile button or other authenticated-only elements
+      try {
+        const authenticatedElements = [
+          '[data-test-id="header-profile"]',
+          '[data-test-id="header-user-button"]',
+          'button[aria-label*="profile" i]',
+          'div[data-test-id="header"]',
+        ];
+        
+        let foundAuthElement = false;
+        for (const selector of authenticatedElements) {
+          const element = await this.page.$(selector).catch(() => null);
+          if (element) {
+            foundAuthElement = true;
+            this.logger.debug(`Found authenticated element: ${selector}`);
+            break;
+          }
+        }
+        
+        if (foundAuthElement) {
+          this.logger.info('User is authenticated (found user profile elements)');
+          this.isLoggedIn = true;
+        } else {
+          this.logger.warn('Could not find authenticated user elements, assuming not logged in');
+          this.isLoggedIn = false;
+        }
+      } catch (error) {
+        this.logger.warn('Error checking for authenticated elements:', error);
+        // Fallback to URL check
+        this.isLoggedIn = (currentUrl.includes('/today') || 
+                          currentUrl === 'https://www.pinterest.com/' ||
+                          currentUrl === 'https://www.pinterest.com');
       }
     } catch (error) {
       this.logger.warn('Could not determine authentication status:', error);
@@ -223,6 +251,16 @@ export class CoreManager {
   setLoggedIn(state: boolean): void {
     this.isLoggedIn = state;
     this.logger.debug('Login state updated to:', state);
+  }
+
+  /**
+   * Verify authentication by re-checking authentication status
+   * Useful to call before performing important operations
+   */
+  async verifyAuthentication(): Promise<boolean> {
+    this.logger.debug('Verifying authentication...');
+    await this.checkAuthentication();
+    return this.isLoggedIn;
   }
 
   /**
