@@ -1,16 +1,23 @@
 {
-  "name": "autopin",
+  "name": "pinterest-js-client",
   "version": "1.0.0",
   "description": "Pinterest automation library with TypeScript and Playwright - undetected features included",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SETUP.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "example": "ts-node src/example.ts",
     "quick-start": "ts-node src/quick-start.ts",
     "test": "ts-node src/quick-start.ts",
-    "postinstall": "npx playwright install chromium"
+    "prepublishOnly": "npm run build",
+    "setup-playwright": "npx playwright install chromium"
   },
   "keywords": [
     "pinterest",
@@ -18,10 +25,25 @@
     "playwright",
     "typescript",
     "undetected",
-    "fingerprint"
+    "fingerprint",
+    "bot",
+    "scraper",
+    "web-automation",
+    "stealth"
   ],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tartofraise/pinterest-js-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tartofraise/pinterest-js-client/issues"
+  },
+  "homepage": "https://github.com/Tartofraise/pinterest-js-client#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
     "playwright": "^1.40.0",
     "fingerprint-injector": "^2.1.75",

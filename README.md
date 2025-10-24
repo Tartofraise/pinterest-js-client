@@ -1,4 +1,4 @@
-# AutoPin - Pinterest Automation Library
+# pinterest-js-client - Pinterest Automation Library
 
 An **unofficial** JavaScript client for Pinterest automation. A powerful TypeScript library for Pinterest automation using Playwright with built-in **undetected features** and **fingerprint-suite** integration. This is a complete rewrite of py3-pinterest with enhanced stealth capabilities.
 
@@ -19,21 +19,29 @@ An **unofficial** JavaScript client for Pinterest automation. A powerful TypeScr
 
 ## 📦 Installation
 
+Install the package via npm:
+
 ```bash
-npm install
+npm install pinterest-js-client
 ```
 
-Or if you want to install dependencies:
+**Important:** After installation, you need to install Playwright's Chromium browser:
 
 ```bash
-npm install playwright fingerprint-injector fingerprint-generator
-npm install --save-dev typescript @types/node ts-node
+npx playwright install chromium
+```
+
+Or if you cloned this repository for development:
+
+```bash
+npm install
+npm run setup-playwright
 ```
 
 ## 🚀 Quick Start
 
 ```typescript
-import { PinterestClient } from './src/PinterestClient';
+import { PinterestClient } from 'pinterest-js-client';
 
 const pinterest = new PinterestClient({
   headless: false,
@@ -316,7 +324,7 @@ await pinterest.close();
 ## 🏗️ Architecture
 
 ```
-autopin/
+pinterest-js-client/
 ├── src/
 │   ├── PinterestClient.ts      # Main client class
 │   ├── types.ts                # TypeScript interfaces
@@ -430,7 +438,7 @@ MIT License - feel free to use this project for personal or commercial purposes.
 
 ## 🌟 Features Comparison
 
-| Feature | py3-pinterest | AutoPin |
+| Feature | py3-pinterest | pinterest-js-client |
 |---------|--------------|---------|
 | Language | Python | TypeScript |
 | Browser Automation | Selenium | Playwright |

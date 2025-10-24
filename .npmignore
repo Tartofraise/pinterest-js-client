@@ -1,0 +1,53 @@
+# Source files (only ship compiled dist/)
+src/
+*.ts
+!*.d.ts
+
+# Development files
+tsconfig.json
+.vscode/
+.idea/
+*.code-workspace
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+
+# Example and development scripts
+example.ts
+example.js
+quick-start.ts
+quick-start.js
+
+# Environment and config
+.env
+*.env
+.env.*
+cookies.json
+*.session
+
+# Build artifacts
+*.log
+*.tsbuildinfo
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (we include via files field)
+# Keep README.md, LICENSE, SETUP.md
+
