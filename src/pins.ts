@@ -65,8 +65,14 @@ export class PinsManager {
       if (pinData.boardName) {
         this.logger.debug('Selecting board:', pinData.boardName);
         const boardSelector = '[data-test-id="board-dropdown-select-button"]';
+        // Wait for the button to be enabled (aria-disabled="false")
+        await this.page.waitForSelector(`${boardSelector}[aria-disabled="false"]`, { timeout: 10000 });
         await this.page.click(boardSelector);
         await this.stealth.randomDelay(500, 1000);
+        
+        // Wait for the board picker popover to appear
+        await this.page.waitForSelector('[data-test-id="board-picker-flyout"]', { timeout: 5000 });
+        await this.stealth.randomDelay(300, 500);
         
         const boardSearchInput = '#pickerSearchField';
         await this.page.waitForSelector(boardSearchInput, { timeout: 5000 });
@@ -168,16 +174,18 @@ export class PinsManager {
       await this.stealth.randomDelay(1000, 2000);
 
       this.logger.debug('Clicking options menu...');
-      const optionsButton = 'button[data-test-id="pin-options-button"], button[aria-label*="More options" i]';
+      const optionsButton = 'button[data-test-id="pin-options-button"]';
       await this.page.click(optionsButton);
       await this.stealth.randomDelay(500, 1000);
 
       this.logger.debug('Clicking delete option...');
-      await this.page.click('div[role="menuitem"]:has-text("Delete")');
+      // Use data-test-id instead of text to avoid language issues
+      await this.page.click('[data-test-id="delete-pin-menu-item"]');
       await this.stealth.randomDelay(500, 1000);
 
       this.logger.debug('Confirming deletion...');
-      await this.page.click('button:has-text("Delete")');
+      // Use data-test-id or role-based selector instead of text
+      await this.page.click('[data-test-id="confirmation-delete-button"], [role="dialog"] button[type="submit"]');
       await this.stealth.randomDelay(2000, 3000);
 
       this.logger.success('Pin deleted successfully');
@@ -200,17 +208,18 @@ export class PinsManager {
       await this.stealth.randomDelay(1000, 2000);
 
       this.logger.debug('Clicking save button...');
-      const saveButton = 'button[data-test-id="pin-save-button"], button:has-text("Save")';
+      const saveButton = 'button[data-test-id="pin-save-button"]';
       await this.page.click(saveButton);
       await this.stealth.randomDelay(1000, 1500);
 
       if (boardName) {
         this.logger.debug('Selecting specific board...');
-        const boardSelector = `div[data-test-id="board-row"]:has-text("${boardName}")`;
+        // Use data-test-id attribute instead of text content
+        const boardSelector = `[data-test-id="board-row-${boardName}"] [data-test-id="board-row-save-button-container"] button`;
         await this.page.click(boardSelector).catch(() => {});
       } else {
         this.logger.debug('Selecting first available board...');
-        await this.page.click('div[data-test-id="board-row"]').catch(() => {});
+        await this.page.click('[data-test-id^="board-row-"] [data-test-id="board-row-save-button-container"] button').catch(() => {});
       }
       
       await this.stealth.randomDelay(2000, 3000);
