@@ -1,6 +1,6 @@
 {
   "name": "pinterest-js-client",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Pinterest automation library with TypeScript and Playwright - undetected features included",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
