@@ -23,11 +23,12 @@ export class CoreManager {
       useFingerprintSuite: true,
       viewport: { width: 1920, height: 1080 },
       logLevel: LogLevel.INFO,
+      disableFileCookies: false,
       ...options,
     };
     this.logger = new Logger('CoreManager', this.options.logLevel);
     this.stealth = new StealthManager();
-    this.cookiesPath = path.join(process.cwd(), 'cookies.json');
+    this.cookiesPath = this.options.cookiesPath || path.join(process.cwd(), 'cookies.json');
   }
 
   /**
@@ -160,6 +161,7 @@ export class CoreManager {
 
   /**
    * Check if user is authenticated by visiting Pinterest homepage
+   * and verifying the presence of authenticated user elements
    */
   private async checkAuthentication(): Promise<void> {
     if (!this.page) return;
@@ -172,19 +174,46 @@ export class CoreManager {
       const currentUrl = this.page.url();
       this.logger.debug('Current URL after navigation:', currentUrl);
       
-      // Check if we're on the homepage (logged in) or redirected to login
-      if (currentUrl.includes('/today') || 
-          currentUrl === 'https://www.pinterest.com/' ||
-          currentUrl === 'https://www.pinterest.com') {
-        this.logger.info('User appears to be logged in (cookies valid)');
-        this.isLoggedIn = true;
-      } else if (currentUrl.includes('/login')) {
+      // First check: URL should not be login page
+      if (currentUrl.includes('/login')) {
         this.logger.info('User not logged in (redirected to login page)');
         this.isLoggedIn = false;
-      } else {
-        this.logger.debug('Current URL:', currentUrl);
-        // If we're not redirected to login and not on home, assume logged in
-        this.isLoggedIn = !currentUrl.includes('/login');
+        return;
+      }
+      
+      // Second check: Look for authenticated user indicators
+      // Check for user profile button or other authenticated-only elements
+      try {
+        const authenticatedElements = [
+          '[data-test-id="header-profile"]',
+          '[data-test-id="header-user-button"]',
+          'button[aria-label*="profile" i]',
+          'div[data-test-id="header"]',
+        ];
+        
+        let foundAuthElement = false;
+        for (const selector of authenticatedElements) {
+          const element = await this.page.$(selector).catch(() => null);
+          if (element) {
+            foundAuthElement = true;
+            this.logger.debug(`Found authenticated element: ${selector}`);
+            break;
+          }
+        }
+        
+        if (foundAuthElement) {
+          this.logger.info('User is authenticated (found user profile elements)');
+          this.isLoggedIn = true;
+        } else {
+          this.logger.warn('Could not find authenticated user elements, assuming not logged in');
+          this.isLoggedIn = false;
+        }
+      } catch (error) {
+        this.logger.warn('Error checking for authenticated elements:', error);
+        // Fallback to URL check
+        this.isLoggedIn = (currentUrl.includes('/today') || 
+                          currentUrl === 'https://www.pinterest.com/' ||
+                          currentUrl === 'https://www.pinterest.com');
       }
     } catch (error) {
       this.logger.warn('Could not determine authentication status:', error);
@@ -225,34 +254,63 @@ export class CoreManager {
   }
 
   /**
-   * Save cookies to file
+   * Verify authentication by re-checking authentication status
+   * Useful to call before performing important operations
+   */
+  async verifyAuthentication(): Promise<boolean> {
+    this.logger.debug('Verifying authentication...');
+    await this.checkAuthentication();
+    return this.isLoggedIn;
+  }
+
+  /**
+   * Save cookies to file or external storage
    */
   async saveCookies(): Promise<void> {
     if (!this.context) return;
     
     try {
       const cookies = await this.context.cookies();
-      fs.writeFileSync(this.cookiesPath, JSON.stringify(cookies, null, 2));
-      this.logger.info(`Cookies saved (${cookies.length} cookies)`);
+      
+      // Call external callback if provided
+      if (this.options.onCookiesUpdate) {
+        await this.options.onCookiesUpdate(cookies);
+        this.logger.info(`Cookies sent to external callback (${cookies.length} cookies)`);
+      }
+      
+      // Save to file unless disabled
+      if (!this.options.disableFileCookies) {
+        fs.writeFileSync(this.cookiesPath, JSON.stringify(cookies, null, 2));
+        this.logger.info(`Cookies saved to file (${cookies.length} cookies)`);
+      }
     } catch (error) {
       this.logger.error('Error saving cookies:', error);
     }
   }
 
   /**
-   * Load cookies from file
+   * Load cookies from external source or file
    */
   private async loadCookies(): Promise<void> {
     if (!this.context) return;
     
     try {
-      if (fs.existsSync(this.cookiesPath)) {
+      // Priority 1: Load from provided cookies in options
+      if (this.options.cookies && this.options.cookies.length > 0) {
+        await this.context.addCookies(this.options.cookies);
+        this.logger.info(`Cookies loaded from options (${this.options.cookies.length} cookies)`);
+        return;
+      }
+      
+      // Priority 2: Load from file (unless disabled)
+      if (!this.options.disableFileCookies && fs.existsSync(this.cookiesPath)) {
         const cookies = JSON.parse(fs.readFileSync(this.cookiesPath, 'utf-8'));
         await this.context.addCookies(cookies);
         this.logger.info(`Cookies loaded from file (${cookies.length} cookies)`);
-      } else {
-        this.logger.debug('No cookies file found, starting fresh');
+        return;
       }
+      
+      this.logger.debug('No cookies found, starting fresh session');
     } catch (error) {
       this.logger.error('Error loading cookies:', error);
     }
@@ -301,5 +359,24 @@ export class CoreManager {
    */
   getLogger(): Logger {
     return this.logger;
+  }
+
+  /**
+   * Get current cookies from browser context
+   */
+  async getCookies(): Promise<any[]> {
+    if (!this.context) {
+      this.logger.warn('Cannot get cookies: context not initialized');
+      return [];
+    }
+    
+    try {
+      const cookies = await this.context.cookies();
+      this.logger.debug(`Retrieved ${cookies.length} cookies`);
+      return cookies;
+    } catch (error) {
+      this.logger.error('Error getting cookies:', error);
+      return [];
+    }
   }
 }

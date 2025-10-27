@@ -2,6 +2,7 @@ import { Page } from 'playwright';
 import { PinData } from './types';
 import { Logger, LogLevel } from './utils/logger';
 import { StealthManager } from './utils/stealth';
+import { downloadImage, deleteFile } from './utils/helpers';
 
 export class PinsManager {
   private page: Page;
@@ -16,21 +17,71 @@ export class PinsManager {
 
   /**
    * Create a new pin
+   * Returns the URL of the created pin
    */
-  async createPin(pinData: PinData): Promise<boolean> {
+  async createPin(pinData: PinData): Promise<string | null> {
     this.logger.info('Creating pin...');
     this.logger.debug('Pin data:', { title: pinData.title, boardName: pinData.boardName });
+
+    let tempImagePath: string | null = null;
 
     try {
       this.logger.debug('Navigating to pin builder...');
       await this.page.goto('https://www.pinterest.com/pin-builder/', { waitUntil: 'domcontentloaded' });
       await this.stealth.randomDelay(1000, 2000);
 
-      if (pinData.imageFile) {
+      // Check if we were redirected to login page (authentication failed)
+      const currentUrl = this.page.url();
+      if (currentUrl.includes('/login')) {
+        this.logger.error('Redirected to login page - authentication has expired or is invalid');
+        throw new Error('Authentication failed: User was redirected to login page. Please re-login or check your cookies.');
+      }
+
+      // Verify we're on the pin builder page
+      if (!currentUrl.includes('/pin-builder') && !currentUrl.includes('/pin-creation-tool')) {
+        this.logger.warn(`Unexpected URL after navigation: ${currentUrl}`);
+        throw new Error(`Failed to navigate to pin builder. Current URL: ${currentUrl}`);
+      }
+
+      this.logger.debug('Successfully navigated to pin builder');
+
+      // Handle image upload - either from URL or file
+      let imagePathToUpload: string | undefined;
+
+      if (pinData.imageUrl) {
+        this.logger.info('Downloading image from URL:', pinData.imageUrl);
+        try {
+          tempImagePath = await downloadImage(pinData.imageUrl);
+          imagePathToUpload = tempImagePath;
+          this.logger.debug('Image downloaded to:', tempImagePath);
+        } catch (error) {
+          this.logger.error('Failed to download image from URL:', error);
+          throw new Error(`Failed to download image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      } else if (pinData.imageFile) {
+        imagePathToUpload = pinData.imageFile;
+      }
+
+      if (imagePathToUpload) {
         this.logger.debug('Uploading image...');
         const fileInput = 'input[type="file"][data-test-id^="media-upload-input"]';
-        await this.page.waitForSelector(fileInput, { timeout: 10000 });
-        await this.page.setInputFiles(fileInput, pinData.imageFile);
+        
+        try {
+          await this.page.waitForSelector(fileInput, { timeout: 10000 });
+        } catch (error) {
+          // Double-check if we got redirected to login
+          const urlAfterWait = this.page.url();
+          if (urlAfterWait.includes('/login')) {
+            this.logger.error('User was redirected to login while waiting for file input');
+            throw new Error('Authentication failed during pin creation. Your session may have expired. Please re-login.');
+          }
+          
+          this.logger.error('File input selector not found on page');
+          this.logger.debug('Current page URL:', urlAfterWait);
+          throw new Error(`Could not find file upload input on pin builder page. This usually indicates authentication issues or Pinterest UI changes. Current URL: ${urlAfterWait}`);
+        }
+        
+        await this.page.setInputFiles(fileInput, imagePathToUpload);
         await this.stealth.randomDelay(2000, 3000);
       }
 
@@ -91,11 +142,72 @@ export class PinsManager {
         await this.stealth.randomDelay(2000, 3000);
       }
 
-      this.logger.success('Pin created successfully');
-      return true;
+      // Wait for success popup and extract pin URL
+      this.logger.debug('Waiting for success popup...');
+      try {
+        // Wait for the success popup with "Voir votre Épingle" (See your Pin) button
+        const pinLinkSelector = 'a[data-test-id="seeItNow"], a[href*="/pin/"]';
+        await this.page.waitForSelector(pinLinkSelector, { timeout: 15000 });
+        await this.stealth.randomDelay(1000, 2000);
+        
+        // Extract the pin URL from the link
+        const pinHref = await this.page.getAttribute(pinLinkSelector, 'href');
+        if (pinHref) {
+          // Convert relative URL to absolute URL
+          const baseUrl = 'https://www.pinterest.com';
+          const pinUrl = pinHref.startsWith('http') ? pinHref : `${baseUrl}${pinHref}`;
+          this.logger.success('Pin created successfully:', pinUrl);
+          
+          // Clean up temporary file if it was created
+          if (tempImagePath) {
+            this.logger.debug('Cleaning up temporary image file...');
+            await deleteFile(tempImagePath).catch(err => 
+              this.logger.warn('Failed to delete temporary file:', err)
+            );
+          }
+          
+          // Optional: Close the popup by pressing Escape or clicking outside
+          await this.page.keyboard.press('Escape').catch(() => {});
+          await this.stealth.randomDelay(500, 1000);
+          
+          return pinUrl;
+        } else {
+          this.logger.warn('Could not extract pin URL from popup');
+          
+          // Clean up temporary file if it was created
+          if (tempImagePath) {
+            this.logger.debug('Cleaning up temporary image file...');
+            await deleteFile(tempImagePath).catch(err => 
+              this.logger.warn('Failed to delete temporary file:', err)
+            );
+          }
+          
+          return null;
+        }
+      } catch (error) {
+        this.logger.warn('Could not find success popup, pin may still have been created');
+        
+        // Clean up temporary file if it was created
+        if (tempImagePath) {
+          this.logger.debug('Cleaning up temporary image file...');
+          await deleteFile(tempImagePath).catch(err => 
+            this.logger.warn('Failed to delete temporary file:', err)
+          );
+        }
+        
+        return null;
+      }
     } catch (error) {
+      // Clean up temporary file on error
+      if (tempImagePath) {
+        this.logger.debug('Cleaning up temporary image file after error...');
+        await deleteFile(tempImagePath).catch(err => 
+          this.logger.warn('Failed to delete temporary file:', err)
+        );
+      }
+      
       this.logger.error('Error creating pin:', error);
-      return false;
+      return null;
     }
   }
 

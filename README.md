@@ -11,6 +11,7 @@ An **unofficial** JavaScript client for Pinterest automation. A powerful TypeScr
 ## ✨ Features
 
 - 🔐 **Secure Authentication** - Login with email/password, cookie persistence
+- 🍪 **Flexible Cookie Management** - File-based, in-memory, or custom external storage (perfect for multi-account)
 - 📌 **Pin Management** - Create, repin, like, comment, and delete pins
 - 📋 **Board Operations** - Create boards, get board pins, follow boards
 - 👥 **User Interactions** - Follow/unfollow users, get user profiles
@@ -20,7 +21,7 @@ An **unofficial** JavaScript client for Pinterest automation. A powerful TypeScr
 - 🛡️ **Anti-Detection** - WebDriver masking, canvas fingerprinting, WebGL spoofing
 - 🎭 **Fingerprint Injector** - Realistic browser fingerprints using [fingerprint-injector](https://www.npmjs.com/package/fingerprint-injector)
 - 📸 **Screenshot Support** - Capture page screenshots
-- 🔄 **Session Management** - Cookie saving and loading for persistent sessions
+- 🔄 **Session Management** - Persistent sessions with automatic or manual cookie handling
 - ⚙️ **Highly Configurable** - Proxy support, custom viewport, timeouts, and more
 
 ## 📦 Installation
@@ -344,9 +345,23 @@ pinterest-js-client/
 └── README.md
 ```
 
+### External Cookie Storage (Optional)
+
+For multi-account or custom storage needs (databases, credential managers):
+
+```typescript
+const pinterest = new PinterestClient({
+  cookies: loadedCookies,      // Provide existing cookies
+  disableFileCookies: true,    // Disable file-based storage
+  onCookiesUpdate: async (cookies) => {
+    await saveToDatabase(cookies);  // Save to your storage
+  },
+});
+```
+
 ## 🔒 Security & Privacy
 
-- **Cookie Management**: Cookies are stored locally in `cookies.json` for session persistence
+- **Cookie Management**: Flexible storage options (file, memory, database, etc.)
 - **Proxy Support**: Use proxies to mask your IP address
 - **Fingerprint Randomization**: Each session gets unique browser fingerprints
 - **No Data Collection**: This library doesn't collect or send any user data
@@ -388,7 +403,6 @@ npm run dev
 interface PinterestOptions {
   email?: string;
   password?: string;
-  username?: string;
   headless?: boolean;
   userDataDir?: string;
   proxy?: ProxySettings;
@@ -396,6 +410,11 @@ interface PinterestOptions {
   timeout?: number;
   slowMo?: number;
   useFingerprintSuite?: boolean;
+  logLevel?: LogLevel;
+  cookies?: any[];                    // Optional: pre-loaded cookies
+  onCookiesUpdate?: (cookies) => Promise<void>;  // Optional: cookie update callback
+  disableFileCookies?: boolean;       // Optional: disable file storage
+  cookiesPath?: string;               // Optional: custom cookie file path
 }
 ```
 
@@ -403,7 +422,7 @@ interface PinterestOptions {
 
 | Method | Description | Returns |
 |--------|-------------|---------|
-| `init()` | Initialize browser and context | `Promise<void>` |
+| `init()` | Initialize browser and context | `Promise<boolean>` |
 | `login(email, password)` | Login to Pinterest | `Promise<boolean>` |
 | `createPin(pinData)` | Create a new pin | `Promise<boolean>` |
 | `createBoard(boardData)` | Create a new board | `Promise<boolean>` |
@@ -421,6 +440,8 @@ interface PinterestOptions {
 | `screenshot(path)` | Take a screenshot | `Promise<void>` |
 | `getPage()` | Get Playwright page | `Page \| null` |
 | `isAuthenticated()` | Check login status | `boolean` |
+| `getCookies()` | Get current session cookies | `Promise<any[]>` |
+| `saveCookies()` | Save cookies (file/callback) | `Promise<void>` |
 | `close()` | Close browser | `Promise<void>` |
 
 ### StealthManager Class

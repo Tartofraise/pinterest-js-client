@@ -83,8 +83,9 @@ export class PinterestClient {
 
   /**
    * Create a new pin
+   * Returns the URL of the created pin, or null if failed
    */
-  async createPin(pinData: PinData): Promise<boolean> {
+  async createPin(pinData: PinData): Promise<string | null> {
     if (!this.pinsManager) throw new Error('Client not initialized');
     if (!this.isLoggedIn) throw new Error('Not logged in');
     return this.pinsManager.createPin(pinData);
@@ -213,6 +214,31 @@ export class PinterestClient {
    */
   isAuthenticated(): boolean {
     return this.isLoggedIn;
+  }
+
+  /**
+   * Verify authentication by re-checking the authentication status
+   * Useful to call before performing operations to ensure session is still valid
+   */
+  async verifyAuthentication(): Promise<boolean> {
+    const isValid = await this.coreManager.verifyAuthentication();
+    this.isLoggedIn = isValid;
+    return isValid;
+  }
+
+  /**
+   * Get current cookies from the browser session
+   * Useful for saving session state externally
+   */
+  async getCookies(): Promise<any[]> {
+    return this.coreManager.getCookies();
+  }
+
+  /**
+   * Save current cookies (triggers onCookiesUpdate callback if provided)
+   */
+  async saveCookies(): Promise<void> {
+    return this.coreManager.saveCookies();
   }
 
   /**

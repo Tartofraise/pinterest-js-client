@@ -16,6 +16,12 @@ export interface PinterestOptions {
   slowMo?: number;
   useFingerprintSuite?: boolean;
   logLevel?: LogLevel;
+  
+  // Cookie Management Options
+  cookies?: any[];  // Pre-loaded cookies to restore session
+  onCookiesUpdate?: (cookies: any[]) => Promise<void>;  // Callback when cookies are updated
+  disableFileCookies?: boolean;  // Disable automatic file-based cookie storage
+  cookiesPath?: string;  // Custom path for cookies file (default: './cookies.json')
 }
 
 export interface ProxySettings {
