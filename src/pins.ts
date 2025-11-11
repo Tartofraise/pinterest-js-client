@@ -16,6 +16,20 @@ export class PinsManager {
   }
 
   /**
+   * Take a screenshot on error for debugging
+   */
+  private async takeErrorScreenshot(operationName: string): Promise<void> {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const screenshotPath = `error-${operationName}-${timestamp}.png`;
+      await this.page.screenshot({ path: screenshotPath, fullPage: true });
+      this.logger.error(`Screenshot saved to: ${screenshotPath}`);
+    } catch (screenshotError) {
+      this.logger.warn('Failed to take error screenshot:', screenshotError);
+    }
+  }
+
+  /**
    * Create a new pin
    * Returns the URL of the created pin
    */
@@ -210,6 +224,9 @@ export class PinsManager {
         return null;
       }
     } catch (error) {
+      // Take screenshot on error for debugging
+      await this.takeErrorScreenshot('createPin');
+      
       // Clean up temporary file on error
       if (tempImagePath) {
         this.logger.debug('Cleaning up temporary image file after error...');
@@ -241,6 +258,7 @@ export class PinsManager {
       this.logger.success('Pin liked successfully');
       return true;
     } catch (error) {
+      await this.takeErrorScreenshot('likePin');
       this.logger.error('Error liking pin:', error);
       return false;
     }
@@ -282,6 +300,7 @@ export class PinsManager {
       this.logger.success('Comment posted successfully');
       return true;
     } catch (error) {
+      await this.takeErrorScreenshot('commentOnPin');
       this.logger.error('Error commenting:', error);
       return false;
     }
@@ -315,6 +334,7 @@ export class PinsManager {
       this.logger.success('Pin deleted successfully');
       return true;
     } catch (error) {
+      await this.takeErrorScreenshot('deletePin');
       this.logger.error('Error deleting pin:', error);
       return false;
     }
@@ -350,6 +370,7 @@ export class PinsManager {
       this.logger.success('Repin successful');
       return true;
     } catch (error) {
+      await this.takeErrorScreenshot('repin');
       this.logger.error('Error repinning:', error);
       return false;
     }
