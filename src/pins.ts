@@ -113,28 +113,40 @@ export class PinsManager {
         await this.stealth.randomDelay(500, 1000);
       }
 
+      let boardSelectionSuccess = false;
+      
       if (pinData.boardName) {
         this.logger.debug('Selecting board:', pinData.boardName);
-        const boardSelector = '[data-test-id="board-dropdown-select-button"]';
-        // Wait for the button to be enabled (aria-disabled="false")
-        await this.page.waitForSelector(`${boardSelector}[aria-disabled="false"]`, { timeout: 10000 });
-        await this.page.click(boardSelector);
-        await this.stealth.randomDelay(500, 1000);
-        
-        // Wait for the board picker popover to appear
-        await this.page.waitForSelector('[data-test-id="board-picker-flyout"]', { timeout: 5000 });
-        await this.stealth.randomDelay(300, 500);
-        
-        const boardSearchInput = '#pickerSearchField';
-        await this.page.waitForSelector(boardSearchInput, { timeout: 5000 });
-        await this.page.fill(boardSearchInput, pinData.boardName);
-        await this.stealth.randomDelay(1000, 1500);
-        
-        const boardRowSelector = `[data-test-id="board-row-${pinData.boardName}"] [data-test-id="board-row-save-button-container"] button`;
-        await this.page.waitForSelector(boardRowSelector, { timeout: 5000 });
-        await this.page.click(boardRowSelector);
-        await this.stealth.randomDelay(2000, 3000);
-      } else {
+        try {
+          const boardSelector = '[data-test-id="board-dropdown-select-button"]';
+          // Wait for the button to be enabled (aria-disabled="false")
+          await this.page.waitForSelector(`${boardSelector}[aria-disabled="false"]`, { timeout: 10000 });
+          await this.page.click(boardSelector);
+          await this.stealth.randomDelay(500, 1000);
+          
+          // Wait for the board picker popover to appear
+          await this.page.waitForSelector('[data-test-id="board-picker-flyout"]', { timeout: 5000 });
+          await this.stealth.randomDelay(300, 500);
+          
+          const boardSearchInput = '#pickerSearchField';
+          await this.page.waitForSelector(boardSearchInput, { timeout: 5000 });
+          await this.page.fill(boardSearchInput, pinData.boardName);
+          await this.stealth.randomDelay(1000, 1500);
+          
+          const boardRowSelector = `[data-test-id="board-row-${pinData.boardName}"] [data-test-id="board-row-save-button-container"] button`;
+          await this.page.waitForSelector(boardRowSelector, { timeout: 5000 });
+          await this.page.click(boardRowSelector);
+          await this.stealth.randomDelay(2000, 3000);
+          this.logger.success('Board selected successfully:', pinData.boardName);
+          boardSelectionSuccess = true;
+        } catch (boardError) {
+          // If board selection fails/times out, fall back to publishing to default board
+          this.logger.warn('Board selection timed out or failed, falling back to default board:', boardError);
+        }
+      }
+      
+      // Publish to default board if no board name was provided or if board selection failed
+      if (!boardSelectionSuccess) {
         this.logger.debug('Publishing to default board...');
         const publishButton = '[data-test-id="board-dropdown-save-button"]';
         await this.page.waitForSelector(publishButton, { timeout: 10000 });

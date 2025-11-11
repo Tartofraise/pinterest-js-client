@@ -14,8 +14,8 @@ import { LogLevel } from './utils/logger';
 async function main() {
   // Create a new Pinterest client with options
   const pinterest = new PinterestClient({
-    headless: false,              // Set to true for headless mode
-    slowMo: 100,                  // Slow down actions by 100ms for more human-like behavior
+    headless: true,              // Set to true for headless mode
+    slowMo: 0,                  // Slow down actions by 100ms for more human-like behavior
     timeout: 30000,               // Default timeout of 30 seconds
     useFingerprintSuite: true,    // Enable fingerprint suite for undetected browsing
     viewport: {
@@ -85,7 +85,7 @@ async function main() {
     // Create a new pin from URL (NEW FEATURE TEST)
     console.log('\n=== Creating a Pin from URL ===');
     const newPinFromUrl: PinData = {
-      imageUrl: 'https://replicate.delivery/xezq/MTQkAOUdxUIbA1N4eIQZepPf9aHbTFni1X3GKA8xDpvxa0ErA/tmpecgfnlp_.jpeg',
+      imageUrl: 'https://cdn.shopify.com/s/files/1/0784/0012/7305/files/Affiche_personnalisee_pour_mamie_avec_mosaique_de_photos.png?v=1762624206',
       title: 'Test Image from URL',
       description: 'Testing the new URL download feature - image automatically downloaded and uploaded to Pinterest',
       link: 'https://mistergift.fr',
