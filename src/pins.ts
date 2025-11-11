@@ -1,4 +1,6 @@
 import { Page } from 'playwright';
+import * as os from 'os';
+import * as path from 'path';
 import { PinData } from './types';
 import { Logger, LogLevel } from './utils/logger';
 import { StealthManager } from './utils/stealth';
@@ -21,7 +23,8 @@ export class PinsManager {
   private async takeErrorScreenshot(operationName: string): Promise<void> {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const screenshotPath = `error-${operationName}-${timestamp}.png`;
+      const filename = `error-${operationName}-${timestamp}.png`;
+      const screenshotPath = path.join(os.tmpdir(), filename);
       await this.page.screenshot({ path: screenshotPath, fullPage: true });
       this.logger.error(`Screenshot saved to: ${screenshotPath}`);
     } catch (screenshotError) {
