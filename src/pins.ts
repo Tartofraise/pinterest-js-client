@@ -162,10 +162,17 @@ export class PinsManager {
       // Publish to default board if no board name was provided or if board selection failed
       if (!boardSelectionSuccess) {
         this.logger.debug('Publishing to default board...');
-        const publishButton = '[data-test-id="board-dropdown-save-button"]';
-        await this.page.waitForSelector(publishButton, { timeout: 10000 });
-        await this.page.click(publishButton);
-        await this.stealth.randomDelay(2000, 3000);
+        try {
+          const publishButton = '[data-test-id="board-dropdown-save-button"]';
+          await this.page.waitForSelector(publishButton, { timeout: 10000 });
+          await this.page.click(publishButton);
+          await this.stealth.randomDelay(2000, 3000);
+        } catch (publishError) {
+          // Take screenshot when publish button fails
+          await this.takeErrorScreenshot('publishButton');
+          this.logger.error('Failed to click publish button:', publishError);
+          throw publishError;
+        }
       }
 
       // Wait for success popup and extract pin URL
